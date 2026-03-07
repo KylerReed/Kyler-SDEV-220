@@ -1,0 +1,129 @@
+Django Tutorial Extension Assignment
+Overview
+
+This project is an extension of the Django tutorial. The goal was to improve the website by adding security, configuring a domain, deploying the project, expanding the functionality, and creating a comment model.
+
+Homework – Adding Security to Your Website
+
+Several security improvements were added to the Django project through the settings file.
+
+Security Settings
+DEBUG = False
+
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost', 'your-app-name.herokuapp.com']
+
+CSRF_COOKIE_SECURE = True
+SESSION_COOKIE_SECURE = True
+SECURE_BROWSER_XSS_FILTER = True
+SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_SSL_REDIRECT = True
+Password Hashing
+PASSWORD_HASHERS = [
+    'django.contrib.auth.hashers.PBKDF2PasswordHasher',
+]
+
+These settings help prevent:
+
+Cross-site scripting (XSS)
+
+Session hijacking
+
+Unsafe cookies
+
+Content sniffing vulnerabilities
+
+Domain Configuration
+
+The project domain was configured by modifying the ALLOWED_HOSTS setting in Django.
+
+Example configuration:
+
+ALLOWED_HOSTS = [
+    'localhost',
+    '127.0.0.1',
+    'your-app-name.herokuapp.com'
+]
+
+If a custom domain is used, it can be added like this:
+
+ALLOWED_HOSTS = [
+    'www.mysite.com',
+    'mysite.com'
+]
+Deploy to Heroku
+
+The project was prepared for deployment using Heroku.
+
+Create requirements.txt
+pip freeze > requirements.txt
+Procfile
+web: gunicorn mysite.wsgi
+runtime.txt
+python-3.11.6
+Deployment Steps
+heroku login
+heroku create django-blog-project
+git add .
+git commit -m "Deploy Django project"
+git push heroku main
+Run migrations on the server
+heroku run python manage.py migrate
+Create an admin account
+heroku run python manage.py createsuperuser
+Homework – Add More to Your Website
+
+Additional functionality was added to improve the website.
+
+Search Feature
+
+Example search view:
+
+def search(request):
+    query = request.GET.get('q')
+    posts = Post.objects.filter(title__icontains=query)
+    return render(request, 'blog/search_results.html', {'posts': posts})
+
+URL configuration:
+
+path('search/', views.search, name='search')
+
+This feature allows users to search for blog posts by title.
+
+Homework – Create Comment Model
+
+A comment system was added so users can respond to blog posts.
+
+Comment Model
+class Comment(models.Model):
+    post = models.ForeignKey('Post', on_delete=models.CASCADE, related_name='comments')
+    author = models.CharField(max_length=200)
+    text = models.TextField()
+    created_date = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.author
+Comment Form
+class CommentForm(forms.ModelForm):
+
+    class Meta:
+        model = Comment
+        fields = ('author', 'text')
+Add Comment View
+def add_comment(request, pk):
+    post = get_object_or_404(Post, pk=pk)
+
+    if request.method == "POST":
+        form = CommentForm(request.POST)
+
+        if form.is_valid():
+            comment = form.save(commit=False)
+            comment.post = post
+            comment.save()
+            return redirect('post_detail', pk=post.pk)
+
+    else:
+        form = CommentForm()
+
+    return render(request, 'blog/add_comment.html', {'form': form})
+URL Configuration
+path('post/<int:pk>/comment/', views.add_comment, name='add_comment')
